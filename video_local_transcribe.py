@@ -1,16 +1,24 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from transformers import pipeline
+import torch
 
 import whisper
 
 # Load Whisper model globally to avoid reloading each time
 MODEL = whisper.load_model("base")
-GPT_MODEL = ""
 
-# Define the transcription directory
+# Constants
+LLAMA_3_2_1B = "meta-llama/Llama-3.2-1B-Instruct"
+LLAMA_3_2_3B = "meta-llama/Llama-3.2-3B-Instruct"
+LLAMA_3_1_8B = "meta-llama/Llama-3.1-8B-Instruct"
+DEFAULT_MODEL = LLAMA_3_2_1B
+MAX_NEW_TOKENS = 512
+TEMPERATURE = 0.8
+TOP_K = 50
+TOP_P = 0.95
 TRANSCRIPTION_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transcriptions")
-
 
 
 def ensure_transcription_folder_exists():
@@ -28,6 +36,7 @@ def generate_text_file(video_path):
     text_file_path = os.path.join(TRANSCRIPTION_FOLDER, sanitized_name)
 
     if os.path.exists(text_file_path):
+        print(f"Transcription already exists: {text_file_path}")
         return text_file_path, True  # File already exists
 
     # Transcribe the video
@@ -54,8 +63,29 @@ def transcribe_only(video_path):
         messagebox.showinfo("Success", f"Transcription saved to: {text_file_path}")
 
 
-def respond_to_prompt(prompt):
-    pass
+def respond_to_prompt(prompt, model_id=DEFAULT_MODEL):
+    """
+    Runs the generated prompt on the Llama model.
+    """
+    print("Generating response...")
+    messages = [{"role": "user", "content": prompt}]
+    pipe = pipeline(
+        "text-generation",
+        model=model_id,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+    )
+    outputs = pipe(
+        messages,
+        max_new_tokens=MAX_NEW_TOKENS,
+        temperature=TEMPERATURE,
+        top_k=TOP_K,
+        top_p=TOP_P,
+        do_sample=True,
+    )
+    result = outputs[0]["generated_text"][-1]['content']
+    return result
+
 
 def process_prompt(video_path, prompt):
     """Handle the transcription and prompt-based processing."""
@@ -74,7 +104,7 @@ def process_prompt(video_path, prompt):
         transcription_text = f.read()
 
     # Process the transcription with the prompt
-        # Query the local LLM
+    # Query the local LLM
     full_prompt = f"Video Transcription: {transcription_text}\n\nPrompt: {prompt}\n\nProvide a detailed response:"
     response = respond_to_prompt(full_prompt)
     result_output.delete("1.0", tk.END)
