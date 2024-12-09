@@ -1,0 +1,5 @@
+transcriptions/
+__pycache__/
+*.pyc
+*.pyo
+.idea/
