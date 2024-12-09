@@ -8,6 +8,10 @@ Enter a prompt in the 'Enter Prompt' field and click 'Process Prompt'. Or click 
 The GUI will display the output in the 'Output' field.
 Transcriptions will be saved to the 'transcriptions' folder. The file names of these will be based on the absolute path of the video file.
 
+## Model Used
+
+`meta-llama/Llama-3.2-1B-Instruct`
+
 ## Setup Instructions
 
 1. Sign up for a HuggingFace account and setup an access token. Save this token for later use. 
